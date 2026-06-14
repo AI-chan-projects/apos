@@ -35,4 +35,4 @@ The following principles define ownership and ultimate authority within APOS.
 * **HANDSOFIT** governs behavior.
 * **ARS** governs ownership.
 
-Together, they establish APOS as a human-governed, auditable, and sovereign digital organization capable of autonomous project execution while preserving human authority and control.
+Together, they establish APOS as a human-governed, auditable, and sovereign digital organization capable of autonomous project execution while preserving human authority and control. 
