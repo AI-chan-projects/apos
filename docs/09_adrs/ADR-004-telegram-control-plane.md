@@ -1,25 +1,24 @@
-# ADR-XXX: Title
+# ADR-004: Telegram Control Plane
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+The Human Director needs a persistent, mobile-first, and real-time interface to oversee the APOS system.
 
 ## Decision
-The specific technical or architectural decision made.
+Utilize Telegram Bot API as the primary Control Plane interface for alerts, monitoring, and approval workflows.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Custom Web Dashboard: Rejected due to high maintenance overhead and lack of real-time push notification efficiency on mobile.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Instant reachability on all devices.
+- Rich interactive UI elements (buttons, menus) are natively supported.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Dependency on a third-party messaging platform.
+- Security concerns regarding bot token management.
 
 ## Date
 2026-06-14

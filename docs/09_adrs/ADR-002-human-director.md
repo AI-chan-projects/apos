@@ -1,25 +1,23 @@
-# ADR-XXX: Title
+# ADR-002: Human Director Integration
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+APOS mandates that humans remain the ultimate authority. Without a formal architectural hook, human intervention becomes an ad-hoc process rather than a systemic constraint.
 
 ## Decision
-The specific technical or architectural decision made.
+Integrate a "Human Director" layer that acts as the primary gatekeeper for high-risk actions. All state transitions flagged as "Requires Approval" must halt until a human-signed event is received.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Purely asynchronous notification: Rejected as it doesn't guarantee a "stop-and-wait" mechanism for critical decisions.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Enforces the Governance principle of "Human Agency".
+- Provides a clear boundary between AI autonomy and human accountability.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Increases latency in the project lifecycle due to waiting for human input.
 
 ## Date
 2026-06-14

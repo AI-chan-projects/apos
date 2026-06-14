@@ -1,25 +1,23 @@
-# ADR-XXX: Title
+# ADR-007: Policy Engine
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+Governance principles (HANDSOFIT) need to be enforced programmatically rather than manually checking logs.
 
 ## Decision
-The specific technical or architectural decision made.
+Implement a rule-based Policy Engine that intercepts actions and validates them against Governance constraints before execution.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Hard-coded logic in each module: Rejected because it is brittle and difficult to update policies across the system.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Centralized control over security and governance rules.
+- Easy to update policies without modifying business logic.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Requires a well-defined Policy DSL (Domain Specific Language).
 
 ## Date
 2026-06-14

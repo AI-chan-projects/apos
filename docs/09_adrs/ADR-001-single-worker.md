@@ -1,25 +1,24 @@
-# ADR-XXX: Title
+# ADR-001: Single Worker Architecture
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+APOS requires a stable environment to manage project lifecycles. Distributing tasks across multiple concurrent workers introduces complexity in state synchronization, event ordering, and dependency management.
 
 ## Decision
-The specific technical or architectural decision made.
+Adopt a "Single Worker" architecture. All project lifecycles, persona interactions, and state transitions are processed sequentially by a single core worker.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Multi-worker/Distributed system: Rejected due to high complexity in ensuring strict event ordering and potential state inconsistency during the early development phase.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Ensures deterministic behavior and event ordering.
+- Significantly reduces infrastructure complexity and race conditions.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Limits concurrent execution throughput.
+- Potential bottleneck if heavy computational tasks are not offloaded to external services.
 
 ## Date
 2026-06-14

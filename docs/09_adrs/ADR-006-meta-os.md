@@ -1,25 +1,23 @@
-# ADR-XXX: Title
+# ADR-006: Meta-OS Definition
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+APOS is not just an application; it requires a management layer for agents, resources, and project metadata.
 
 ## Decision
-The specific technical or architectural decision made.
+Define APOS as a "Meta-OS" that encapsulates the management of project lifecycles, persona registration, and resource access policies.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Standard Application Framework: Rejected as it doesn't convey the need for resource lifecycle management and systemic governance.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Clearly distinguishes between OS-level management and application-level logic.
+- Promotes modular architecture.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Over-architecting risk if the scope is not strictly managed.
 
 ## Date
 2026-06-14

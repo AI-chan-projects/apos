@@ -1,25 +1,26 @@
-# ADR-XXX: Title
+# ADR-005: Memory Architecture
 
 ## Status
 Accepted
 
 ## Context
-The problem statement or the background leading to this decision.
+APOS agents need a way to manage both transient execution context (Short-term) and accumulated project knowledge (Long-term).
 
 ## Decision
-The specific technical or architectural decision made.
+Implement a tiered memory architecture: 
+1. **Working Memory**: Transient context for current task execution.
+2. **Project Memory**: Persistent store for project events and state.
+3. **Knowledge Base**: Vector-based RAG for long-term knowledge distillation.
 
 ## Alternatives
-Other options considered and why they were rejected.
+- Simple long-context window: Rejected because it does not scale for long-running project lifecycles.
 
 ## Consequences
 ### Positive
-- Benefit 1
-- Benefit 2
-
+- Efficient context management for long-term projects.
+- Better knowledge retention and retrieval.
 ### Negative
-- Drawback 1
-- Drawback 2
+- Complexity in managing vector database embeddings and synchronization.
 
 ## Date
 2026-06-14
