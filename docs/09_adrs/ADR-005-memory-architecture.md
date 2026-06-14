@@ -29,4 +29,4 @@ HANDSOFIT: N (Transparent Learning); ARS: Sovereignty
 - When the knowledge base exceeds latency/cost requirements for real-time retrieval.
 
 ## Date
-2026-06-14
+2026-06-14 
