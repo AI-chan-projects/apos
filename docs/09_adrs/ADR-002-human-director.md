@@ -4,20 +4,29 @@
 Accepted
 
 ## Context
-APOS mandates that humans remain the ultimate authority. Without a formal architectural hook, human intervention becomes an ad-hoc process rather than a systemic constraint.
+Human oversight is the foundation of APOS. Without a formal architectural hook, human intervention remains ad-hoc rather than a systemic constraint.
 
 ## Decision
-Integrate a "Human Director" layer that acts as the primary gatekeeper for high-risk actions. All state transitions flagged as "Requires Approval" must halt until a human-signed event is received.
+Integrate a "Human Director" layer that acts as the primary gatekeeper. High-risk actions must halt until a human-signed event is received.
+
+## Governance Mapping
+HANDSOFIT: H, F, D; ARS: Accountability
+
+## Assumptions
+- Human Director is available for critical decision loops.
+
+## Invariants
+- Final authority remains with the Human Director.
 
 ## Alternatives
-- Purely asynchronous notification: Rejected as it doesn't guarantee a "stop-and-wait" mechanism for critical decisions.
+- Asynchronous notification: Rejected; lacks the "stop-and-wait" mechanism required for critical decisions.
 
 ## Consequences
-### Positive
-- Enforces the Governance principle of "Human Agency".
-- Provides a clear boundary between AI autonomy and human accountability.
-### Negative
-- Increases latency in the project lifecycle due to waiting for human input.
+- Positive: Upholds Human Agency and safety.
+- Negative: Adds latency to the project lifecycle.
+
+## Future Revisit Conditions
+- When automated trust levels allow for autonomous execution of high-risk tasks.
 
 ## Date
 2026-06-14

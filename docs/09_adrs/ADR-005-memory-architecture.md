@@ -4,23 +4,29 @@
 Accepted
 
 ## Context
-APOS agents need a way to manage both transient execution context (Short-term) and accumulated project knowledge (Long-term).
+Agents must manage transient execution data and accumulated project knowledge to perform long-term tasks effectively.
 
 ## Decision
-Implement a tiered memory architecture: 
-1. **Working Memory**: Transient context for current task execution.
-2. **Project Memory**: Persistent store for project events and state.
-3. **Knowledge Base**: Vector-based RAG for long-term knowledge distillation.
+Implement a tiered memory architecture: Working, Project, Knowledge Base, and Governance Memory.
+
+## Governance Mapping
+HANDSOFIT: N (Transparent Learning); ARS: Sovereignty
+
+## Assumptions
+- RAG-based knowledge distillation is feasible for current context needs.
+
+## Invariants
+- Governance Memory (Policies/ADRs) must be synchronized across agent restarts.
 
 ## Alternatives
-- Simple long-context window: Rejected because it does not scale for long-running project lifecycles.
+- Flat context window: Rejected; does not scale for multi-week projects.
 
 ## Consequences
-### Positive
-- Efficient context management for long-term projects.
-- Better knowledge retention and retrieval.
-### Negative
-- Complexity in managing vector database embeddings and synchronization.
+- Positive: Enables long-term knowledge retention and "organizational memory".
+- Negative: Complexity in managing vector databases.
+
+## Future Revisit Conditions
+- When the knowledge base exceeds latency/cost requirements for real-time retrieval.
 
 ## Date
 2026-06-14

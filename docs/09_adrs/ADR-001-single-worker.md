@@ -4,21 +4,32 @@
 Accepted
 
 ## Context
-APOS requires a stable environment to manage project lifecycles. Distributing tasks across multiple concurrent workers introduces complexity in state synchronization, event ordering, and dependency management.
+APOS requires a stable environment to manage project lifecycles. Distributed workers introduce high complexity in state synchronization, event ordering, and dependency management.
 
 ## Decision
 Adopt a "Single Worker" architecture. All project lifecycles, persona interactions, and state transitions are processed sequentially by a single core worker.
 
+## Governance Mapping
+HANDSOFIT: S (Safety First)
+
+## Assumptions
+- Single MacBook/local environment.
+- Sequential event processing is sufficient for current project scale.
+
+## Invariants
+- Single sequence of event processing.
+
 ## Alternatives
-- Multi-worker/Distributed system: Rejected due to high complexity in ensuring strict event ordering and potential state inconsistency during the early development phase.
+- Distributed Actor Runtime: Rejected due to complexity in guaranteeing strict event ordering at this stage.
 
 ## Consequences
-### Positive
-- Ensures deterministic behavior and event ordering.
-- Significantly reduces infrastructure complexity and race conditions.
-### Negative
-- Limits concurrent execution throughput.
-- Potential bottleneck if heavy computational tasks are not offloaded to external services.
+- Positive: Deterministic behavior, simplified state management, no race conditions.
+- Negative: Limited horizontal scalability.
+
+## Future Revisit Conditions
+- When multi-node execution is required.
+- When project concurrency creates significant performance bottlenecks.
+- When resource scheduling demands distributed execution.
 
 ## Date
 2026-06-14

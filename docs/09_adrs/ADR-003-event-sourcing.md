@@ -4,21 +4,31 @@
 Accepted
 
 ## Context
-Traditional CRUD state management makes it difficult to audit decisions and replay history for learning purposes.
+Traditional state snapshots obscure the reasoning behind system changes, hindering auditability and future learning.
 
 ## Decision
-Use Event Sourcing as the primary pattern for state management. Every state change is stored as an immutable event in the Event Store.
+Adopt Event Sourcing. Every state change is stored as an immutable event in the Event Store.
+
+## Governance Mapping
+HANDSOFIT: A (Auditability), O (Observability)
+
+## Assumptions
+- Event storage volume is manageable.
+
+## Invariants
+- Events are immutable.
+- Events are append-only.
+- State is a projection of events.
 
 ## Alternatives
-- Standard relational database snapshots: Rejected because it loses the "why" and "how" behind state changes, which is critical for 6주차 Learning.
+- CRUD snapshots: Rejected; lacks transparency and audit history.
 
 ## Consequences
-### Positive
-- Full auditability and traceability of the project history.
-- Enables easy "time-travel" debugging and project reconstruction.
-### Negative
-- Requires more complex implementation than simple state updates.
-- Event store can grow very large; requires archiving strategy.
+- Positive: Full auditability, time-travel debugging, enables deep learning from history.
+- Negative: Implementation complexity; needs archiving strategies.
+
+## Future Revisit Conditions
+- When event throughput exceeds current storage capacity or system latency requirements.
 
 ## Date
 2026-06-14

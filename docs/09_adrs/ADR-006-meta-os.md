@@ -4,20 +4,34 @@
 Accepted
 
 ## Context
-APOS is not just an application; it requires a management layer for agents, resources, and project metadata.
+APOS is more than an application; it is an organizational orchestrator.
 
 ## Decision
-Define APOS as a "Meta-OS" that encapsulates the management of project lifecycles, persona registration, and resource access policies.
+Define APOS as a Meta-OS governing Project Lifecycles, Agent Personas, Memory Systems, Policy/Approval, Resource Allocation, and Event Processing.
+
+## Architectural Principle
+- Applications run on APOS.
+- Projects are orchestrated by APOS.
+- Governance is enforced by APOS.
+
+## Governance Mapping
+ARS: Accountability, Responsibility, Sovereignty
+
+## Assumptions
+- Modular separation between kernel and application logic is feasible.
+
+## Invariants
+- All agent interactions must occur through the APOS interface.
 
 ## Alternatives
-- Standard Application Framework: Rejected as it doesn't convey the need for resource lifecycle management and systemic governance.
+- Simple Agent Framework: Rejected; fails to convey systemic governance and resource control.
 
 ## Consequences
-### Positive
-- Clearly distinguishes between OS-level management and application-level logic.
-- Promotes modular architecture.
-### Negative
-- Over-architecting risk if the scope is not strictly managed.
+- Positive: Modular, scalable, and clearly defined scope.
+- Negative: Risk of over-architecting early on.
+
+## Future Revisit Conditions
+- If the system scope shifts from "project management" to "general automation".
 
 ## Date
 2026-06-14
