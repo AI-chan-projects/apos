@@ -29,4 +29,4 @@ To ensure system consistency, maintain the following logical relationships:
 * **State = Projection(Event Store)**: State is not stored; it is derived from immutable facts.
 * **Event = Immutable Fact**: Once committed, events cannot be deleted or modified.
 * **Policy evaluates Action**: All proposed actions are subject to centralized policy validation.
-* **Director = Ultimate Accountability**: Every autonomous decision is ultimately traceable to the Human Director's oversight.
+* **Director = Ultimate Accountability**: Every autonomous decision is ultimately traceable to the Human Director's oversight. 

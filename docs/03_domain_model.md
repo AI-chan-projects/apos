@@ -58,4 +58,4 @@ This model defines the core entities, relationships, and invariants within the A
 ---
 
 ## 4. Ubiquitous Language Summary
-* **Persona vs. Agent**: A **Persona** is the "what/who" (logical role/template), while an **Agent** is the "how" (runtime instance/executor). This decoupling allows swapping underlying models without changing the Persona definition.
+* **Persona vs. Agent**: A **Persona** is the "what/who" (logical role/template), while an **Agent** is the "how" (runtime instance/executor). This decoupling allows swapping underlying models without changing the Persona definition. 
