@@ -11,9 +11,11 @@ scripts
         timeline_viewer.py
         dag_visualizer.py
       causal
+        causal_timeline_api.py
         causal_viewer.py
         __init__.py
         README.md
+        causal_bind_service.py
         causal_router.py
       web
         README.md
@@ -21,9 +23,6 @@ scripts
         app.py
         templates
       __init__.py
-      causal_timeline
-        causal_timeline_api.py
-        causal_bind_service.py
       time_scrubber
         server.py
         README.md
@@ -49,13 +48,11 @@ scripts
         dag_view.js
     core
       causal
-        causal_trace_linker.py
         event_correlation_matrix.py
         __init__.py
         causal_trace_engine.py
         README.md
         causal_chain_builder.py
-        causal_replay_engine.py
         event_causality_resolver.py
         causality_types.py
         failure_explainer.py
@@ -79,9 +76,9 @@ scripts
           resume_engine.cpython-311.pyc
         dag_executor.py
         approval_bridge.py
-        causal_feedback_engine.py
       evolution
         dag_evolver.py
+        causal_feedback_engine.py
       control_plane
         README.md
         orchestrator.py

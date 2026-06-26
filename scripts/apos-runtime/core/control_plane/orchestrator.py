@@ -1,5 +1,5 @@
 from core.air.task_graph_builder import TaskGraphBuilder
-from core.execution.causal_dag_scheduler import CausalDAGScheduler
+from runtime.scheduler.scheduler import Scheduler as CausalDAGScheduler
 from core.execution.dag_executor import DAGSExecutor   # 🔥 SINGLE WORKER EXECUTOR
 from core.event_store.event_store import EventStore, Event
 from core.evolution.dag_evolver import DAGEvolver
