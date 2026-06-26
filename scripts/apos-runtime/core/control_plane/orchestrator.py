@@ -10,15 +10,41 @@ import uuid
 import asyncio
 
 
+# =================================================
+# 🔥 EVENT STREAM LAYER (SYNC + ASYNC SAFE WRAPPER)
+# =================================================
+class SafeEventStream:
+
+    def __init__(self, stream):
+        self.stream = stream
+
+    def push(self, payload):
+        """
+        Safe dispatch layer:
+        - async loop 있으면 create_task
+        - 없으면 ignore safely
+        """
+        if not self.stream:
+            return
+
+        try:
+            asyncio.get_running_loop()
+            asyncio.create_task(self.stream.push_event(payload))
+        except RuntimeError:
+            # no running loop → silent fallback
+            pass
+
+
 # -------------------------------------------------
-# 🔥 Live Stream Hook (OPTIONAL RUNTIME LAYER)
+# 🔥 Live Stream Hook
 # -------------------------------------------------
 try:
     from ui.live.event_stream import EventStream
     from ui.live.websocket_manager import WebSocketManager
 
     ws_manager = WebSocketManager()
-    global_event_stream = EventStream(ws_manager)
+    _raw_stream = EventStream(ws_manager)
+    global_event_stream = SafeEventStream(_raw_stream)
 
 except:
     global_event_stream = None
@@ -80,7 +106,6 @@ class ExecutionPredictor:
 
     def should_execute(self, nodes):
         risk = self.predict_risk(nodes)
-
         return {
             "risk_score": risk,
             "safe_to_execute": risk < 5
@@ -92,50 +117,39 @@ class ExecutionPredictor:
 # =================================================
 class APOSOrchestrator:
 
-    # -------------------------------------------------
-    # BOOT SEQUENCE (ORDERED)
-    # -------------------------------------------------
     def __init__(self):
 
-        # 1. EVENT STORE (source of truth)
         self.store = EventStore()
 
-        # 2. RUNTIME SYSTEMS
         self.health_monitor = health_monitor
         self.recovery_engine = recovery_engine
 
-        # 3. EVOLUTION ENGINE (optional)
         self.feedback_engine = (
             CausalFeedbackEngine(self) if CausalFeedbackEngine else None
         )
 
-        # 4. EXECUTION CORE
         self.predictor = ExecutionPredictor()
         self.dag_executor = DAGSExecutor()
         self.evolver = DAGEvolver()
 
-        # 5. BOOT TRACE RECORDER (FINAL AUTHORITY)
         self.boot_recorder = BootTraceRecorder()
 
-        # 6. INTERNAL STATE
         self._reference_dag = None
 
     # -------------------------------------------------
-    # COMPATIBILITY HOOK (IMPORTANT FOR FEEDBACK ENGINE)
+    # COMPATIBILITY HOOK
     # -------------------------------------------------
     def set_reference_dag(self, dag):
         self._reference_dag = dag
 
-    # =================================================
+    # -------------------------------------------------
     # MAIN EXECUTION LOOP
-    # =================================================
+    # -------------------------------------------------
     def run_once(self, air: dict):
 
         self._emit("orchestrator_start", {"air": air})
 
-        # -------------------------------------------------
         # 1. BUILD TASK GRAPH
-        # -------------------------------------------------
         builder = TaskGraphBuilder().build_from_air(air)
         builder.attach_approval_flags(self._policy_engine)
 
@@ -144,9 +158,7 @@ class APOSOrchestrator:
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
-        # -------------------------------------------------
-        # 2. PREDICTIVE SAFETY GATE
-        # -------------------------------------------------
+        # 2. PREDICTION
         prediction = self.predictor.should_execute(nodes)
         self._emit("execution_prediction", prediction)
 
@@ -158,20 +170,15 @@ class APOSOrchestrator:
                 "prediction": prediction
             }
 
-        # -------------------------------------------------
-        # 3. DAG SCHEDULING
-        # -------------------------------------------------
+        # 3. SCHEDULING
         scheduler = CausalDAGScheduler(nodes)
         ordered_nodes = scheduler.resolve()
 
         self._emit("dag_scheduled", {"count": len(ordered_nodes)})
 
-        # CRITICAL: feed evolution system
         self.set_reference_dag(ordered_nodes)
 
-        # -------------------------------------------------
         # 4. EXECUTION
-        # -------------------------------------------------
         result = self.dag_executor.execute(ordered_nodes)
 
         executed = result.get("executed", [])
@@ -182,27 +189,21 @@ class APOSOrchestrator:
             "blocked": blocked
         })
 
-        # -------------------------------------------------
-        # 5. POST CYCLE SYSTEMS
-        # -------------------------------------------------
+        # 5. POST SYSTEMS
         self._post_cycle_recovery()
         self._apply_feedback(nodes, executed, blocked)
         self._apply_evolution(nodes, executed, blocked)
 
-        # -------------------------------------------------
-        # 6. BOOT TRACE (SINGLE SOURCE OF TRUTH)
-        # -------------------------------------------------
+        # 6. BOOT TRACE
         signature = self.boot_recorder.record(
             air=air,
             nodes=[self._normalize(n) for n in nodes],
-            ordered_nodes=[n.name for n in ordered_nodes],
+            ordered_nodes=[self._normalize(n) for n in ordered_nodes],
             executed=executed,
             blocked=blocked
         )
 
-        self._emit("boot_trace_recorded", {
-            "signature": signature
-        })
+        self._emit("boot_trace_recorded", {"signature": signature})
 
         return {
             "executed": executed,
@@ -211,7 +212,7 @@ class APOSOrchestrator:
         }
 
     # -------------------------------------------------
-    # NORMALIZER (IMPORTANT FIX FOR STRING BUGS)
+    # NODE NORMALIZATION (UNIFIED CONTRACT)
     # -------------------------------------------------
     def _normalize(self, node):
         return {
@@ -242,7 +243,7 @@ class APOSOrchestrator:
             self._emit("recovery_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # FEEDBACK LOOP
+    # FEEDBACK
     # -------------------------------------------------
     def _apply_feedback(self, nodes, executed, blocked):
 
@@ -256,7 +257,7 @@ class APOSOrchestrator:
             self._emit("feedback_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # EVOLUTION LOOP
+    # EVOLUTION
     # -------------------------------------------------
     def _apply_evolution(self, nodes, executed, blocked):
 
@@ -272,7 +273,7 @@ class APOSOrchestrator:
             self._emit("evolution_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # POLICY
+    # POLICY ENGINE
     # -------------------------------------------------
     def _policy_engine(self, action):
 
@@ -285,7 +286,7 @@ class APOSOrchestrator:
         return "ALLOW"
 
     # -------------------------------------------------
-    # EVENT EMITTER (SYNC ONLY FIX)
+    # EVENT EMITTER (FULL SAFE MODE)
     # -------------------------------------------------
     def _emit(self, event_type, payload):
 
@@ -303,17 +304,12 @@ class APOSOrchestrator:
         if self.health_monitor:
             self.health_monitor.record_event()
 
-        # FIX: async-safe call (NO coroutine leak)
         if global_event_stream:
-            try:
-                asyncio.create_task(global_event_stream.push_event({
-                    "id": event.id,
-                    "timestamp": event.timestamp,
-                    "type": event.type,
-                    "payload": event.payload,
-                    "source": event.source,
-                    "status": event.status
-                }))
-            except RuntimeError:
-                # fallback (no event loop)
-                pass
+            global_event_stream.push({
+                "id": event.id,
+                "timestamp": event.timestamp,
+                "type": event.type,
+                "payload": event.payload,
+                "source": event.source,
+                "status": event.status
+            })
