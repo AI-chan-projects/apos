@@ -40,7 +40,7 @@ except:
 
 # 🧠 Causal Feedback Engine
 try:
-    from core.execution.causal_feedback_engine import CausalFeedbackEngine
+    from core.evolution.causal_feedback_engine import CausalFeedbackEngine
 except:
     CausalFeedbackEngine = None
 
