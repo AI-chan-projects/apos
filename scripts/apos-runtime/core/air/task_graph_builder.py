@@ -49,5 +49,24 @@ class TaskGraphBuilder:
 
         return self
 
+    def attach_approval_flags(self, policy_engine):
+        """
+        Post-processing step:
+        Evaluates actions and marks nodes as BLOCKED or READY.
+        """
+
+        for node in self.nodes.values():
+
+            node.status = "READY"
+
+            for action in node.actions:
+                decision = policy_engine(action)
+
+                if decision == "APPROVE_REQUIRED":
+                    node.status = "BLOCKED"
+                    break
+
+        return self
+
     def get_nodes(self):
         return self.nodes
