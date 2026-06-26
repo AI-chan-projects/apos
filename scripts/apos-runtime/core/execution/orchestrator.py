@@ -37,11 +37,45 @@ except:
     recovery_engine = None
 
 
-# 🧠 Causal Feedback Engine (NEW)
+# 🧠 Causal Feedback Engine
 try:
     from core.execution.causal_feedback_engine import CausalFeedbackEngine
 except:
     CausalFeedbackEngine = None
+
+
+# 🧠 Execution Predictor (NEW)
+class ExecutionPredictor:
+
+    def __init__(self):
+        self.store = EventStore()
+
+    def extract_features(self, nodes):
+        return {
+            "node_count": len(nodes),
+            "high_priority_nodes": sum(1 for n in nodes if n.priority > 5),
+            "blocked_risk": sum(1 for n in nodes if n.status == "BLOCKED"),
+        }
+
+    def predict_risk(self, nodes):
+
+        f = self.extract_features(nodes)
+
+        score = 0
+        score += f["blocked_risk"] * 3
+        score += f["high_priority_nodes"] * 1
+        score += f["node_count"] * 0.1
+
+        return min(score, 10)
+
+    def should_execute(self, nodes):
+
+        risk = self.predict_risk(nodes)
+
+        return {
+            "risk_score": risk,
+            "safe_to_execute": risk < 5
+        }
 
 
 class APOSOrchestrator:
@@ -50,12 +84,13 @@ class APOSOrchestrator:
         self.store = EventStore()
         self.execution_engine = ExecutionEngine()
 
-        # monitors
         self.health_monitor = health_monitor
         self.recovery_engine = recovery_engine
 
-        # 🧠 feedback engine init (NEW)
         self.feedback_engine = CausalFeedbackEngine(self.execution_engine) if CausalFeedbackEngine else None
+
+        # 🧠 Predictor INIT (NEW CORE)
+        self.predictor = ExecutionPredictor()
 
     # -------------------------------------------------
     # MAIN LOOP
@@ -72,7 +107,21 @@ class APOSOrchestrator:
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
-        # 2. DAG Scheduling (CAUSAL)
+        # 🧠 1.5 PREDICTIVE GATE (NEW)
+        prediction = self.predictor.should_execute(nodes)
+
+        self._emit("execution_prediction", prediction)
+
+        if not prediction["safe_to_execute"]:
+            self._emit("execution_blocked_by_predictor", prediction)
+
+            return {
+                "executed": [],
+                "blocked": [n.name for n in nodes],
+                "prediction": prediction
+            }
+
+        # 2. DAG Scheduling
         scheduler = CausalDAGScheduler(nodes)
         ordered_nodes = scheduler.resolve()
 
@@ -104,12 +153,13 @@ class APOSOrchestrator:
         # 🧠 5. POST-CYCLE HEALTH + RECOVERY
         self._post_cycle_recovery()
 
-        # 🧠 6. CAUSAL FEEDBACK LOOP (NEW CORE)
+        # 🧠 6. FEEDBACK LOOP
         self._apply_feedback(nodes, executed, blocked)
 
         return {
             "executed": executed,
-            "blocked": blocked
+            "blocked": blocked,
+            "prediction": prediction
         }
 
     # -------------------------------------------------
@@ -136,7 +186,7 @@ class APOSOrchestrator:
             self._emit("recovery_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 FEEDBACK LOOP (NEW CORE)
+    # FEEDBACK LOOP
     # -------------------------------------------------
     def _apply_feedback(self, nodes, executed, blocked):
 
@@ -178,7 +228,6 @@ class APOSOrchestrator:
 
         self.store.append(event)
 
-        # 🧠 heartbeat
         if self.health_monitor:
             self.health_monitor.record_event()
 
