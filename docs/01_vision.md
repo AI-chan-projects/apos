@@ -4,7 +4,7 @@
 APOS is more than just an automation tool; it is a "Digital Organization Operating System" that expands human intellectual productivity.
 
 ## Mission
-To build a partner system where, once a human defines the "Goal," the AI autonomously plans, executes, validates, and learns through the entire "Project Lifecycle" to ensure project completion.
+To build a partner system where, once a human defines the “Goal,” the AI reasons over a structured representation of knowledge, then autonomously plans, executes, validates, and learns throughout the entire project lifecycle to ensure completion.
 
 ## Guiding Principles
 1. **Human Governance:** Humans remain the ultimate authority for all creative direction and decision-making.

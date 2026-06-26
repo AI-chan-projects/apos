@@ -1,38 +1,181 @@
 # APOS Governance Principles
 
-Human oversight is the foundational pillar of APOS. Governance within APOS is defined by two complementary layers:
+Human oversight is the foundational pillar of APOS. Governance within APOS operates as a **constraint and validation layer over AIR (APOS Intermediate Representation)**.
 
-* **HANDSOFIT**: Operational principles governing how AI agents behave and interact with humans.
-* **ARS (Accountability, Responsibility, Sovereignty)**: Meta-governance principles defining ownership, authority, and ultimate control within the system.
-
----
-
-## I. HANDSOFIT Principles
-The following principles define the behavioral boundaries and responsibilities of AI agents operating within APOS.
-
-* **H - Human Agency**: Humans remain the ultimate decision-makers (Directors). AI agents may propose and execute actions, but they cannot replace final human judgment.
-* **A - Auditability**: Every critical action must be logged in a way that is fully auditable and traceable.
-* **N - Non-concealment (Transparent Learning)**: Failures, errors, and unexpected outcomes must never be concealed. They are to be captured and accumulated as learning assets for continuous organizational improvement.
-* **D - Direct Intervention (Emergency Authority)**: Humans retain the absolute right to pause, stop, rollback, or place the system into a safe mode at any time.
-* **S - Safety First**: System safety, controllability, and predictability always take precedence over the speed or scale of automation.
-* **O - Observability**: All significant actions, decisions, and state transitions must be transparent and observable to the Human Director.
-* **F - Formal Approval**: Irreversible, high-risk, or policy-sensitive actions require explicit human approval before execution.
-* **I - Improvement Management**: AI agents may propose self-improvements, optimizations, and policy changes, but they cannot unilaterally implement them. Systemic changes require human authorization.
-* **T - Task Privilege (Least Privilege)**: AI agents must adhere to the principle of least privilege, possessing only the permissions necessary to perform their assigned tasks.
+Governance does not define reasoning or execution logic.
+Instead, it defines **what AIR-derived actions are permissible, auditable, and sovereignly controlled**.
 
 ---
 
-## II. ARS Meta-Governance Principles
-The following principles define ownership and ultimate authority within APOS.
+# I. Governance-AIR Relationship
 
-* **A - Accountability**: All actions executed by APOS are ultimately accountable to the designated Human Director. AI agents act as advisors and executors, not legal or moral principals.
-* **R - Responsibility**: Every action, event, and decision within APOS must have clearly defined ownership and role assignments. Responsibilities must be explicit, traceable, and reviewable.
-* **S - Sovereignty**: Data, policies, organizational memories, event histories, and governance rules generated within APOS belong to the deploying individual or organization and remain under their sovereign control. External services, models, or providers must not assume ownership of these assets.
+All governance decisions in APOS are applied to outputs derived from AIR:
+
+- AIR defines *what should be done (reasoning)*
+- Governance defines *what is allowed to be done (control)*
+- Execution systems enforce *what is actually done (actions)*
+
+Governance operates strictly on:
+- AIR Inference outputs
+- AIR-Control mapped Actions
+- AIR-Validation results
+- AIR-Meta layer modifications
 
 ---
 
-## Governance Statement
-* **HANDSOFIT** governs behavior.
-* **ARS** governs ownership.
+# II. HANDSOFIT Principles (AIR-Constrained Behavioral Layer)
 
-Together, they establish APOS as a human-governed, auditable, and sovereign digital organization capable of autonomous project execution while preserving human authority and control. 
+HANDSOFIT defines behavioral constraints applied to AIR-derived actions and reasoning outputs.
+
+---
+
+### H - Human Agency
+Humans remain the ultimate authority over AIR interpretation and system execution.
+
+AIR may generate reasoning, plans, and predictions, but final authority over:
+- Goal approval
+- Action execution
+- Meta-layer modification
+
+remains with the Human Director.
+
+---
+
+### A - Auditability
+Every transformation from AIR (Inference → Action → Event) must be fully traceable.
+
+Traceability requirements:
+- AIR decomposition path
+- Control variable mapping
+- Action execution result
+- Validation outcome
+
+---
+
+### N - Non-concealment (Transparent Learning)
+All AIR Validation failures, prediction errors, and inference mismatches must be preserved.
+
+No AIR-derived result may be discarded without logging into:
+- Project Memory
+- Governance Memory (if policy-relevant)
+
+---
+
+### D - Direct Intervention
+Human Director retains override authority over:
+
+- AIR reasoning outputs
+- Action execution pipelines
+- System state transitions
+
+including rollback of AIR-driven decisions.
+
+---
+
+### S - Safety First
+AIR-generated actions must be filtered through safety constraints before execution.
+
+Safety overrides AIR predictions when:
+- Risk exceeds policy threshold
+- Control variables affect irreversible resources
+
+---
+
+### O - Observability
+All AIR states must be externally observable through:
+
+- Inference traces
+- Prediction outputs
+- Validation results
+- Event projections
+
+No hidden AIR transformations are permitted.
+
+---
+
+### F - Formal Approval
+Any AIR-derived Action classified as:
+
+- high-risk
+- irreversible
+- policy-sensitive
+
+requires explicit Human Director approval before execution.
+
+---
+
+### I - Improvement Management
+AIR Meta-layer modifications are strictly governed.
+
+AIR may propose:
+- assumption updates
+- latent variable adjustments
+- structural changes
+
+but cannot self-apply changes without governance approval.
+
+---
+
+### T - Task Privilege (Least Privilege)
+AIR-generated Tasks and Actions must respect minimal capability exposure.
+
+Capabilities are dynamically constrained based on:
+- AIR Control requirements
+- Policy evaluation
+- Stage context
+
+---
+
+# III. ARS Meta-Governance Principles (AIR Ownership Layer)
+
+ARS governs ownership and sovereignty over AIR-derived artifacts.
+
+---
+
+### A - Accountability
+All AIR-generated outputs ultimately map to the Human Director.
+
+This includes:
+- AIR reasoning paths
+- Actions derived from AIR
+- Validation outcomes
+
+AI agents are AIR interpreters, not accountable entities.
+
+---
+
+### R - Responsibility
+Each AIR transformation step must have explicit ownership:
+
+- AIR generation responsibility (Agent)
+- Action execution responsibility (Persona)
+- Validation responsibility (System)
+
+Responsibility is tracked through AIR → Event mapping.
+
+---
+
+### S - Sovereignty
+All AIR artifacts, including:
+
+- AIR states
+- inference histories
+- latent structures
+- validation logs
+- governance metadata
+
+belong exclusively to the deploying entity.
+
+External models or systems do not have ownership rights over AIR-derived knowledge.
+
+---
+
+# Governance Statement
+
+- HANDSOFIT governs AIR-constrained behavior
+- ARS governs AIR-derived ownership and accountability
+
+Together, they ensure that:
+
+> AIR enables autonomous reasoning  
+> Governance ensures controlled, auditable, and sovereign execution of that reasoning
