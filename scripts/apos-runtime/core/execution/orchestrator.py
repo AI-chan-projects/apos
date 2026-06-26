@@ -19,11 +19,24 @@ except:
     global_event_stream = None
 
 
+# 🧠 Runtime Health Monitor Hook (NEW)
+try:
+    from runtime_monitor.health_monitor import RuntimeHealthMonitor
+
+    health_monitor = RuntimeHealthMonitor()
+
+except:
+    health_monitor = None
+
+
 class APOSOrchestrator:
 
     def __init__(self):
         self.store = EventStore()
         self.execution_engine = ExecutionEngine()
+
+        # 🧠 attach monitor to orchestrator lifecycle
+        self.health_monitor = health_monitor
 
     # -------------------------------------------------
     # MAIN LOOP
@@ -105,6 +118,10 @@ class APOSOrchestrator:
 
         # 1. Persist to Event Store (source of truth)
         self.store.append(event)
+
+        # 🧠 1.5 Runtime Health Monitor Hook (NEW)
+        if self.health_monitor:
+            self.health_monitor.record_event()
 
         # 2. Live Stream (real-time UI)
         self._emit_live(event)
