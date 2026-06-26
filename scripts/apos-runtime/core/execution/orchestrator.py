@@ -2,6 +2,7 @@ from core.air.task_graph_builder import TaskGraphBuilder
 from core.execution.causal_dag_scheduler import CausalDAGScheduler
 from core.execution.execution_engine import ExecutionEngine
 from core.event_store.event_store import EventStore, Event
+from core.evolution.dag_evolver import DAGEvolver
 from core.approval.approval_store import approval_store
 from datetime import datetime
 import uuid
@@ -44,7 +45,7 @@ except:
     CausalFeedbackEngine = None
 
 
-# 🧠 Execution Predictor (NEW)
+# 🧠 Execution Predictor
 class ExecutionPredictor:
 
     def __init__(self):
@@ -89,8 +90,11 @@ class APOSOrchestrator:
 
         self.feedback_engine = CausalFeedbackEngine(self.execution_engine) if CausalFeedbackEngine else None
 
-        # 🧠 Predictor INIT (NEW CORE)
+        # 🧠 Predictor
         self.predictor = ExecutionPredictor()
+
+        # 🧠 EVOLVER (NEW CORE)
+        self.evolver = DAGEvolver()
 
     # -------------------------------------------------
     # MAIN LOOP
@@ -107,7 +111,7 @@ class APOSOrchestrator:
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
-        # 🧠 1.5 PREDICTIVE GATE (NEW)
+        # 🧠 1.5 PREDICTIVE GATE
         prediction = self.predictor.should_execute(nodes)
 
         self._emit("execution_prediction", prediction)
@@ -150,11 +154,10 @@ class APOSOrchestrator:
             "blocked": blocked
         })
 
-        # 🧠 5. POST-CYCLE HEALTH + RECOVERY
+        # 🧠 5. POST-CYCLE SYSTEMS
         self._post_cycle_recovery()
-
-        # 🧠 6. FEEDBACK LOOP
         self._apply_feedback(nodes, executed, blocked)
+        self._apply_evolution(nodes, executed, blocked)   # 🔥 NEW
 
         return {
             "executed": executed,
@@ -199,6 +202,22 @@ class APOSOrchestrator:
 
         except Exception as e:
             self._emit("feedback_failed", {"error": str(e)})
+
+    # -------------------------------------------------
+    # 🧠 DAG EVOLUTION LOOP (NEW CORE)
+    # -------------------------------------------------
+    def _apply_evolution(self, nodes, executed, blocked):
+
+        try:
+            new_nodes = self.evolver.evolve(nodes, executed, blocked)
+
+            self._emit("dag_evolved", {
+                "old_count": len(nodes),
+                "new_count": len(new_nodes)
+            })
+
+        except Exception as e:
+            self._emit("evolution_failed", {"error": str(e)})
 
     # -------------------------------------------------
     # POLICY ENGINE
