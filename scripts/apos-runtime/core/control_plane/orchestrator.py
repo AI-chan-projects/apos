@@ -1,14 +1,17 @@
 from core.air.task_graph_builder import TaskGraphBuilder
 from runtime.scheduler.scheduler import Scheduler as CausalDAGScheduler
-from core.execution.dag_executor import DAGSExecutor   # 🔥 SINGLE WORKER EXECUTOR
+from core.execution.dag_executor import DAGSExecutor
 from core.event_store.event_store import EventStore, Event
 from core.evolution.dag_evolver import DAGEvolver
 from core.approval.approval_store import approval_store
+from core.debug.boot_trace_recorder import BootTraceRecorder
 from datetime import datetime
 import uuid
 
 
+# -------------------------------------------------
 # 🔥 Live Stream Hook
+# -------------------------------------------------
 try:
     from ui.live.event_stream import EventStream
     from ui.live.websocket_manager import WebSocketManager
@@ -20,7 +23,9 @@ except:
     global_event_stream = None
 
 
+# -------------------------------------------------
 # 🧠 Runtime Health Monitor
+# -------------------------------------------------
 try:
     from runtime_monitor.health_monitor import RuntimeHealthMonitor
     health_monitor = RuntimeHealthMonitor()
@@ -29,7 +34,9 @@ except:
     health_monitor = None
 
 
+# -------------------------------------------------
 # 🧠 Failure Recovery Engine
+# -------------------------------------------------
 try:
     from recovery.recovery_orchestrator import FailureAutoRecoveryEngine
     recovery_engine = FailureAutoRecoveryEngine()
@@ -38,22 +45,26 @@ except:
     recovery_engine = None
 
 
+# -------------------------------------------------
 # 🧠 Causal Feedback Engine
+# -------------------------------------------------
 try:
     from core.evolution.causal_feedback_engine import CausalFeedbackEngine
 except:
     CausalFeedbackEngine = None
 
 
-# -------------------------------------------------
-# 🧠 Execution Predictor (Light Risk Gate)
-# -------------------------------------------------
+# =================================================
+# 🧠 Execution Predictor (Light Safety Gate)
+# =================================================
 class ExecutionPredictor:
 
     def __init__(self):
         self.store = EventStore()
 
     def extract_features(self, nodes):
+        nodes = list(nodes.values()) if isinstance(nodes, dict) else nodes
+
         return {
             "node_count": len(nodes),
             "high_priority_nodes": sum(1 for n in nodes if n.priority > 5),
@@ -80,7 +91,7 @@ class ExecutionPredictor:
 
 
 # =================================================
-# 🧠 APOS ORCHESTRATOR (SINGLE WORKER CORE)
+# 🧠 APOS ORCHESTRATOR (KERNEL CORE)
 # =================================================
 class APOSOrchestrator:
 
@@ -96,13 +107,14 @@ class APOSOrchestrator:
 
         self.predictor = ExecutionPredictor()
 
-        # 🔥 SINGLE WORKER EXECUTION CORE (ADR-001 ENFORCED)
         self.dag_executor = DAGSExecutor()
-
         self.evolver = DAGEvolver()
 
+        # 🧠 BOOT TRACE RECORDER (NEW)
+        self.boot_recorder = BootTraceRecorder()
+
     # -------------------------------------------------
-    # MAIN LOOP (DETERMINISTIC SINGLE PASS)
+    # MAIN LOOP
     # -------------------------------------------------
     def run_once(self, air: dict):
 
@@ -112,7 +124,8 @@ class APOSOrchestrator:
         builder = TaskGraphBuilder().build_from_air(air)
         builder.attach_approval_flags(self._policy_engine)
 
-        nodes = builder.get_nodes()
+        node_map = builder.get_nodes()
+        nodes = list(node_map.values())
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
@@ -120,7 +133,6 @@ class APOSOrchestrator:
         # 🧠 PREDICTIVE SAFETY GATE
         # -------------------------------------------------
         prediction = self.predictor.should_execute(nodes)
-
         self._emit("execution_prediction", prediction)
 
         if not prediction["safe_to_execute"]:
@@ -141,7 +153,7 @@ class APOSOrchestrator:
         self._emit("dag_scheduled", {"count": len(ordered_nodes)})
 
         # -------------------------------------------------
-        # 3. SINGLE WORKER EXECUTION (CRITICAL)
+        # 3. SINGLE WORKER EXECUTION
         # -------------------------------------------------
         result = self.dag_executor.execute(ordered_nodes)
 
@@ -159,6 +171,25 @@ class APOSOrchestrator:
         self._post_cycle_recovery()
         self._apply_feedback(nodes, executed, blocked)
         self._apply_evolution(nodes, executed, blocked)
+
+        # -------------------------------------------------
+        # 🧠 BOOT TRACE RECORD (FINAL KERNEL STEP)
+        # -------------------------------------------------
+        try:
+            signature = self.boot_recorder.record(
+                air=air,
+                nodes=nodes,
+                ordered_nodes=ordered_nodes,
+                executed=executed,
+                blocked=blocked
+            )
+
+            self._emit("boot_trace_recorded", {
+                "signature": signature
+            })
+
+        except Exception as e:
+            self._emit("boot_trace_failed", {"error": str(e)})
 
         return {
             "executed": executed,
@@ -190,7 +221,7 @@ class APOSOrchestrator:
             self._emit("recovery_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 FEEDBACK LOOP (CAUSAL LEARNING)
+    # 🧠 FEEDBACK LOOP
     # -------------------------------------------------
     def _apply_feedback(self, nodes, executed, blocked):
 
@@ -205,7 +236,7 @@ class APOSOrchestrator:
             self._emit("feedback_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 DAG EVOLUTION LOOP
+    # 🧠 DAG EVOLUTION
     # -------------------------------------------------
     def _apply_evolution(self, nodes, executed, blocked):
 
@@ -233,7 +264,7 @@ class APOSOrchestrator:
         return "ALLOW"
 
     # -------------------------------------------------
-    # 📡 EVENT EMITTER (SOURCE OF TRUTH)
+    # 📡 EVENT EMITTER
     # -------------------------------------------------
     def _emit(self, event_type, payload):
 
@@ -254,7 +285,7 @@ class APOSOrchestrator:
         self._emit_live(event)
 
     # -------------------------------------------------
-    # 🌐 LIVE STREAM LAYER (UI BINDING)
+    # 🌐 LIVE STREAM
     # -------------------------------------------------
     async def _emit_live(self, event):
 
