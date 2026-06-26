@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from core.causal.causal_viewer import CausalViewer
+from causal.causal_viewer import CausalViewer
 
 router = APIRouter()
 viewer = CausalViewer()

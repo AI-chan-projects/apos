@@ -3,6 +3,9 @@ from recovery.replay_engine import ReplayEngine
 from recovery.state_reconstructor import StateReconstructor
 from recovery.restart_controller import RestartController
 
+# 🧠 CAUSAL LAYER (NEW)
+from causal.failure_attribution_engine import FailureAttributionEngine
+
 
 class FailureAutoRecoveryEngine:
 
@@ -11,6 +14,9 @@ class FailureAutoRecoveryEngine:
         self.replay = ReplayEngine()
         self.reconstructor = StateReconstructor()
         self.controller = RestartController()
+
+        # 🧠 causal intelligence layer
+        self.causal_engine = FailureAttributionEngine()
 
     def recover(self, health_state):
 
@@ -29,9 +35,19 @@ class FailureAutoRecoveryEngine:
 
         print("[RECOVERY] reconstructed state:", state)
 
-        # 3. decision logic
+        # 🧠 3. CAUSAL ANALYSIS (NEW CORE STEP)
+        analysis = self.causal_engine.analyze(failures[0])
+
+        print("[CAUSAL ANALYSIS]", analysis)
+
+        # 4. decision logic (now enriched with causal insight)
         if "CPU_FAILURE" in failures:
-            print("[RECOVERY] hard restart triggered")
+            print("[RECOVERY] hard restart triggered (causal-informed)")
+
+            # optional: use causal signal in future routing
+            if analysis and analysis.get("explanation"):
+                print("[CAUSAL INSIGHT]", analysis["explanation"])
+
             self.controller.hard_restart()
 
         else:
@@ -40,5 +56,6 @@ class FailureAutoRecoveryEngine:
         return {
             "status": "recovered",
             "failures": failures,
-            "state": state
+            "state": state,
+            "causal_analysis": analysis
         }

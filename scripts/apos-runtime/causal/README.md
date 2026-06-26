@@ -1,0 +1,11 @@
+전체 구조
+
+[FAILURE EVENT]
+      ↓
+[EVENT CORRELATION]
+      ↓
+[CAUSAL CHAIN BUILD]
+      ↓
+[ROOT CAUSE RANKING]
+      ↓
+[EXPLANATION OUTPUT]
