@@ -10,6 +10,9 @@ class CausalDAGScheduler:
         # causal weights per node
         self.weights = {node.id: 0 for node in nodes}
 
+        # 🧠 reference DAG memory (NEW)
+        self.reference = None
+
     # ----------------------------
     # STEP 1: build causal signal
     # ----------------------------
@@ -38,17 +41,23 @@ class CausalDAGScheduler:
                             self.weights[node.id] -= 1
 
     # ----------------------------
+    # 🧠 NEW: reference DAG injection
+    # ----------------------------
+    def set_reference_dag(self, dag_nodes):
+        self.reference = dag_nodes
+
+    # ----------------------------
     # STEP 2: resolve causal order
     # ----------------------------
     def resolve(self):
 
         self.build_causal_signal()
 
-        # sort by:
-        # 1. dependency already handled outside
-        # 2. causal weight (lower = more stable)
+        # if we have learned DAG preference, use it
+        base = self.reference if self.reference is not None else self.nodes
+
         ordered = sorted(
-            self.nodes,
+            base,
             key=lambda n: self.weights.get(n.id, 0)
         )
 

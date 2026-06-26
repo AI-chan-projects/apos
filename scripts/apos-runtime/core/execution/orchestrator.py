@@ -1,5 +1,4 @@
 from core.air.task_graph_builder import TaskGraphBuilder
-from core.execution.dag_scheduler import DAGScheduler
 from core.execution.causal_dag_scheduler import CausalDAGScheduler
 from core.execution.execution_engine import ExecutionEngine
 from core.event_store.event_store import EventStore, Event
@@ -8,7 +7,7 @@ from datetime import datetime
 import uuid
 
 
-# 🔥 Live Stream Hook (optional external injection)
+# 🔥 Live Stream Hook
 try:
     from ui.live.event_stream import EventStream
     from ui.live.websocket_manager import WebSocketManager
@@ -20,7 +19,7 @@ except:
     global_event_stream = None
 
 
-# 🧠 Runtime Health Monitor Hook (NEW)
+# 🧠 Runtime Health Monitor
 try:
     from runtime_monitor.health_monitor import RuntimeHealthMonitor
     health_monitor = RuntimeHealthMonitor()
@@ -29,13 +28,20 @@ except:
     health_monitor = None
 
 
-# 🧠 Failure Recovery Engine (NEW)
+# 🧠 Failure Recovery Engine
 try:
     from recovery.recovery_orchestrator import FailureAutoRecoveryEngine
     recovery_engine = FailureAutoRecoveryEngine()
 
 except:
     recovery_engine = None
+
+
+# 🧠 Causal Feedback Engine (NEW)
+try:
+    from core.execution.causal_feedback_engine import CausalFeedbackEngine
+except:
+    CausalFeedbackEngine = None
 
 
 class APOSOrchestrator:
@@ -47,6 +53,9 @@ class APOSOrchestrator:
         # monitors
         self.health_monitor = health_monitor
         self.recovery_engine = recovery_engine
+
+        # 🧠 feedback engine init (NEW)
+        self.feedback_engine = CausalFeedbackEngine(self.execution_engine) if CausalFeedbackEngine else None
 
     # -------------------------------------------------
     # MAIN LOOP
@@ -63,7 +72,7 @@ class APOSOrchestrator:
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
-        # 2. DAG Scheduling
+        # 2. DAG Scheduling (CAUSAL)
         scheduler = CausalDAGScheduler(nodes)
         ordered_nodes = scheduler.resolve()
 
@@ -92,8 +101,11 @@ class APOSOrchestrator:
             "blocked": blocked
         })
 
-        # 🧠 5. POST-CYCLE HEALTH + RECOVERY (NEW CORE INTEGRATION)
+        # 🧠 5. POST-CYCLE HEALTH + RECOVERY
         self._post_cycle_recovery()
+
+        # 🧠 6. CAUSAL FEEDBACK LOOP (NEW CORE)
+        self._apply_feedback(nodes, executed, blocked)
 
         return {
             "executed": executed,
@@ -101,7 +113,7 @@ class APOSOrchestrator:
         }
 
     # -------------------------------------------------
-    # POST-CYCLE RECOVERY HOOK (NEW)
+    # POST-CYCLE RECOVERY
     # -------------------------------------------------
     def _post_cycle_recovery(self):
 
@@ -109,7 +121,6 @@ class APOSOrchestrator:
             return
 
         try:
-            # 1. get health snapshot from monitor
             probe_state = self.health_monitor.probe.run_probe()
             metric_state = self.health_monitor.metrics.snapshot()
 
@@ -119,11 +130,25 @@ class APOSOrchestrator:
                 "anomalies": []
             }
 
-            # 2. trigger recovery engine
             self.recovery_engine.recover(health_state)
 
         except Exception as e:
             self._emit("recovery_failed", {"error": str(e)})
+
+    # -------------------------------------------------
+    # 🧠 FEEDBACK LOOP (NEW CORE)
+    # -------------------------------------------------
+    def _apply_feedback(self, nodes, executed, blocked):
+
+        if not self.feedback_engine:
+            return
+
+        try:
+            self.feedback_engine.learn(nodes, executed, blocked)
+            self.feedback_engine.update_scheduler_bias()
+
+        except Exception as e:
+            self._emit("feedback_failed", {"error": str(e)})
 
     # -------------------------------------------------
     # POLICY ENGINE
@@ -153,7 +178,7 @@ class APOSOrchestrator:
 
         self.store.append(event)
 
-        # 🧠 heartbeat to monitor
+        # 🧠 heartbeat
         if self.health_monitor:
             self.health_monitor.record_event()
 
