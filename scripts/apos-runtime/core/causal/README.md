@@ -1,3 +1,15 @@
+전체 구조
+
+[FAILURE EVENT]
+      ↓
+[EVENT CORRELATION]
+      ↓
+[CAUSAL CHAIN BUILD]
+      ↓
+[ROOT CAUSE RANKING]
+      ↓
+[EXPLANATION OUTPUT]
+
 “왜 이 일이 일어났는가”를 구조적으로 증명하는 단계
 
 이건 디버깅이 아니라:
