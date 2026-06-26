@@ -1,6 +1,6 @@
 from core.air.task_graph_builder import TaskGraphBuilder
 from core.execution.causal_dag_scheduler import CausalDAGScheduler
-from core.execution.execution_engine import ExecutionEngine
+from core.execution.dag_executor import DAGSExecutor   # 🔥 NEW
 from core.event_store.event_store import EventStore, Event
 from core.evolution.dag_evolver import DAGEvolver
 from core.approval.approval_store import approval_store
@@ -59,7 +59,6 @@ class ExecutionPredictor:
         }
 
     def predict_risk(self, nodes):
-
         f = self.extract_features(nodes)
 
         score = 0
@@ -70,7 +69,6 @@ class ExecutionPredictor:
         return min(score, 10)
 
     def should_execute(self, nodes):
-
         risk = self.predict_risk(nodes)
 
         return {
@@ -83,17 +81,19 @@ class APOSOrchestrator:
 
     def __init__(self):
         self.store = EventStore()
-        self.execution_engine = ExecutionEngine()
 
         self.health_monitor = health_monitor
         self.recovery_engine = recovery_engine
 
-        self.feedback_engine = CausalFeedbackEngine(self.execution_engine) if CausalFeedbackEngine else None
+        self.feedback_engine = (
+            CausalFeedbackEngine(self) if CausalFeedbackEngine else None
+        )
 
-        # 🧠 Predictor
         self.predictor = ExecutionPredictor()
 
-        # 🧠 EVOLVER (NEW CORE)
+        # 🧠 SINGLE WORKER EXECUTOR (ADR-001 CORE)
+        self.dag_executor = DAGSExecutor()
+
         self.evolver = DAGEvolver()
 
     # -------------------------------------------------
@@ -111,7 +111,7 @@ class APOSOrchestrator:
 
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
-        # 🧠 1.5 PREDICTIVE GATE
+        # 🧠 Predictive Gate
         prediction = self.predictor.should_execute(nodes)
 
         self._emit("execution_prediction", prediction)
@@ -131,22 +131,11 @@ class APOSOrchestrator:
 
         self._emit("dag_scheduled", {"count": len(ordered_nodes)})
 
-        # 3. Execution Loop
-        executed = []
-        blocked = []
+        # 3. EXECUTION (ADR-001 COMPLIANT)
+        result = self.dag_executor.execute(ordered_nodes)
 
-        for node in ordered_nodes:
-
-            if node.status == "BLOCKED":
-                blocked.append(node.name)
-                self._emit("node_blocked", {"node": node.name})
-                continue
-
-            self._emit("node_executing", {"node": node.name})
-
-            self.execution_engine.execute([node])
-
-            executed.append(node.name)
+        executed = result["executed"]
+        blocked = result["blocked"]
 
         # 4. Summary Event
         self._emit("execution_complete", {
@@ -154,10 +143,10 @@ class APOSOrchestrator:
             "blocked": blocked
         })
 
-        # 🧠 5. POST-CYCLE SYSTEMS
+        # 5. POST-CYCLE SYSTEMS
         self._post_cycle_recovery()
         self._apply_feedback(nodes, executed, blocked)
-        self._apply_evolution(nodes, executed, blocked)   # 🔥 NEW
+        self._apply_evolution(nodes, executed, blocked)
 
         return {
             "executed": executed,
@@ -204,7 +193,7 @@ class APOSOrchestrator:
             self._emit("feedback_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 DAG EVOLUTION LOOP (NEW CORE)
+    # DAG EVOLUTION
     # -------------------------------------------------
     def _apply_evolution(self, nodes, executed, blocked):
 
