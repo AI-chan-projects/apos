@@ -1,0 +1,11 @@
+전체구조
+
+[FAILURE DETECTION]
+        ↓
+[EVENT REPLAY]
+        ↓
+[STATE RECONSTRUCTION]
+        ↓
+[RESTART DECISION]
+        ↓
+[ORCHESTRATOR RESTART]

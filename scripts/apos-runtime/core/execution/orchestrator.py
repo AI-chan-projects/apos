@@ -22,11 +22,19 @@ except:
 # 🧠 Runtime Health Monitor Hook (NEW)
 try:
     from runtime_monitor.health_monitor import RuntimeHealthMonitor
-
     health_monitor = RuntimeHealthMonitor()
 
 except:
     health_monitor = None
+
+
+# 🧠 Failure Recovery Engine (NEW)
+try:
+    from recovery.recovery_orchestrator import FailureAutoRecoveryEngine
+    recovery_engine = FailureAutoRecoveryEngine()
+
+except:
+    recovery_engine = None
 
 
 class APOSOrchestrator:
@@ -35,16 +43,14 @@ class APOSOrchestrator:
         self.store = EventStore()
         self.execution_engine = ExecutionEngine()
 
-        # 🧠 attach monitor to orchestrator lifecycle
+        # monitors
         self.health_monitor = health_monitor
+        self.recovery_engine = recovery_engine
 
     # -------------------------------------------------
     # MAIN LOOP
     # -------------------------------------------------
     def run_once(self, air: dict):
-        """
-        Single deterministic execution cycle
-        """
 
         self._emit("orchestrator_start", {"air": air})
 
@@ -85,13 +91,41 @@ class APOSOrchestrator:
             "blocked": blocked
         })
 
+        # 🧠 5. POST-CYCLE HEALTH + RECOVERY (NEW CORE INTEGRATION)
+        self._post_cycle_recovery()
+
         return {
             "executed": executed,
             "blocked": blocked
         }
 
     # -------------------------------------------------
-    # POLICY ENGINE (injected hook)
+    # POST-CYCLE RECOVERY HOOK (NEW)
+    # -------------------------------------------------
+    def _post_cycle_recovery(self):
+
+        if not self.health_monitor or not self.recovery_engine:
+            return
+
+        try:
+            # 1. get health snapshot from monitor
+            probe_state = self.health_monitor.probe.run_probe()
+            metric_state = self.health_monitor.metrics.snapshot()
+
+            health_state = {
+                **probe_state,
+                **metric_state,
+                "anomalies": []
+            }
+
+            # 2. trigger recovery engine
+            self.recovery_engine.recover(health_state)
+
+        except Exception as e:
+            self._emit("recovery_failed", {"error": str(e)})
+
+    # -------------------------------------------------
+    # POLICY ENGINE
     # -------------------------------------------------
     def _policy_engine(self, action):
         if action["type"] == "log":
@@ -103,7 +137,7 @@ class APOSOrchestrator:
         return "ALLOW"
 
     # -------------------------------------------------
-    # EVENT EMITTER (CORE UPGRADE)
+    # EVENT EMITTER
     # -------------------------------------------------
     def _emit(self, event_type, payload):
 
@@ -116,18 +150,16 @@ class APOSOrchestrator:
             status="success",
         )
 
-        # 1. Persist to Event Store (source of truth)
         self.store.append(event)
 
-        # 🧠 1.5 Runtime Health Monitor Hook (NEW)
+        # 🧠 heartbeat to monitor
         if self.health_monitor:
             self.health_monitor.record_event()
 
-        # 2. Live Stream (real-time UI)
         self._emit_live(event)
 
     # -------------------------------------------------
-    # LIVE STREAM HOOK
+    # LIVE STREAM
     # -------------------------------------------------
     async def _emit_live(self, event):
 
