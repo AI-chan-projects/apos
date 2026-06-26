@@ -3,12 +3,9 @@ from datetime import datetime
 
 
 class ApprovalStore:
-    """
-    Human Director approval queue (minimal persistent in-memory version)
-    """
-
     def __init__(self):
         self.pending = {}
+        self.history = {}
 
     def create_request(self, action, context):
         approval_id = str(uuid.uuid4())
@@ -24,18 +21,25 @@ class ApprovalStore:
         return approval_id
 
     def approve(self, approval_id):
-        if approval_id in self.pending:
-            self.pending[approval_id]["status"] = "APPROVED"
-            return self.pending[approval_id]
-
-        return None
+        return self._resolve(approval_id, "APPROVED")
 
     def reject(self, approval_id):
-        if approval_id in self.pending:
-            self.pending[approval_id]["status"] = "REJECTED"
-            return self.pending[approval_id]
+        return self._resolve(approval_id, "REJECTED")
 
-        return None
+    def _resolve(self, approval_id, status):
+        if approval_id not in self.pending:
+            return None
+
+        item = self.pending.pop(approval_id)
+        item["status"] = status
+        item["resolved_at"] = datetime.utcnow().isoformat()
+
+        self.history[approval_id] = item
+
+        return item
 
     def get(self, approval_id):
-        return self.pending.get(approval_id)
+        return self.history.get(approval_id)
+    
+
+approval_store = ApprovalStore()

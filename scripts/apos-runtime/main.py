@@ -3,11 +3,15 @@ import uuid
 
 from core.event_store.event_store import EventStore, Event
 from core.policy.evaluator import evaluate_policy
+from core.execution.resume_engine import ResumeEngine
 from core.approval.approval_store import ApprovalStore
 
-
+resume_engine = ResumeEngine()
 approval_store = ApprovalStore()
 
+def resume_action(approval_id: str):
+
+    return resume_engine.resume(approval_id)
 
 def generate_air(goal: str):
     return {

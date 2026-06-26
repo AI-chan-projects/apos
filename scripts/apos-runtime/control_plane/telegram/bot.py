@@ -3,13 +3,16 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 from main import run_once
 from core.approval.approval_store import approval_store
+from core.execution.resume_engine import ResumeEngine
+
+resume_engine = ResumeEngine()
 
 TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "APOS Control Plane Online\n/run <goal>\n/approve <id>\n/reject <id>"
+        "APOS Control Plane Online\n/run <goal>\n/approve <id>\n/reject <id>\n/resume <id>"
     )
 
 
@@ -26,10 +29,9 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     result = approval_store.approve(approval_id)
 
-    if result:
-        await update.message.reply_text(f"APPROVED: {approval_id}")
-    else:
-        await update.message.reply_text("Invalid approval id")
+    await update.message.reply_text(
+        f"APPROVED: {approval_id}" if result else "Invalid approval id"
+    )
 
 
 async def reject(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,10 +39,17 @@ async def reject(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     result = approval_store.reject(approval_id)
 
-    if result:
-        await update.message.reply_text(f"REJECTED: {approval_id}")
-    else:
-        await update.message.reply_text("Invalid approval id")
+    await update.message.reply_text(
+        f"REJECTED: {approval_id}" if result else "Invalid approval id"
+    )
+
+
+async def resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    approval_id = context.args[0]
+
+    result = resume_engine.resume(approval_id)
+
+    await update.message.reply_text(str(result))
 
 
 def main():
@@ -50,6 +59,7 @@ def main():
     app.add_handler(CommandHandler("run", run))
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CommandHandler("reject", reject))
+    app.add_handler(CommandHandler("resume", resume))
 
     print("APOS Control Plane running...")
     app.run_polling()
