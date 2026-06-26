@@ -1,5 +1,6 @@
 from core.air.task_graph_builder import TaskGraphBuilder
 from core.execution.dag_scheduler import DAGScheduler
+from core.execution.causal_dag_scheduler import CausalDAGScheduler
 from core.execution.execution_engine import ExecutionEngine
 from core.event_store.event_store import EventStore, Event
 from core.approval.approval_store import approval_store
@@ -63,7 +64,7 @@ class APOSOrchestrator:
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
         # 2. DAG Scheduling
-        scheduler = DAGScheduler(nodes)
+        scheduler = CausalDAGScheduler(nodes)
         ordered_nodes = scheduler.resolve()
 
         self._emit("dag_scheduled", {"count": len(ordered_nodes)})
