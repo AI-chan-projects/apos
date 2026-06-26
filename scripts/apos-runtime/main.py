@@ -1,19 +1,25 @@
 from datetime import datetime
 import uuid
+import argparse
 
-from core.event_store.event_store import EventStore, Event
-from core.policy.evaluator import evaluate_policy
-from core.execution.resume_engine import ResumeEngine
-from core.approval.approval_store import ApprovalStore
+from core.control_plane.orchestrator import APOSOrchestrator
 
-resume_engine = ResumeEngine()
-approval_store = ApprovalStore()
 
-def resume_action(approval_id: str):
+# =================================================
+# 🧠 BOOTSTRAP
+# =================================================
 
-    return resume_engine.resume(approval_id)
+orchestrator = APOSOrchestrator()
 
-def generate_air(goal: str):
+
+# =================================================
+# 🧠 CLI ENTRY
+# =================================================
+
+def build_air(goal: str):
+    """
+    Legacy AIR generator (for boot testing)
+    """
     return {
         "objective": goal,
         "tasks": [
@@ -28,97 +34,51 @@ def generate_air(goal: str):
     }
 
 
-def execute_action(action):
-    return Event(
-        id=str(uuid.uuid4()),
-        timestamp=datetime.utcnow().isoformat(),
-        type=f"action_{action['type']}",
-        payload=action.get("payload", {}),
-        source="Kernel",
-        status="success",
+# =================================================
+# 🧠 MAIN EXECUTION PIPELINE
+# =================================================
+
+def run(goal: str):
+    """
+    APOS Unified Execution Entry
+    """
+
+    air = build_air(goal)
+
+    print("\n🚀 [APOS BOOT] starting orchestrator...\n")
+
+    result = orchestrator.run_once(air)
+
+    print("\n==============================")
+    print("🧠 APOS EXECUTION COMPLETE")
+    print("==============================")
+    print(result)
+
+    return result
+
+
+# =================================================
+# 🧠 CLI INTERFACE
+# =================================================
+
+def main():
+    parser = argparse.ArgumentParser(description="APOS Runtime Entry")
+
+    parser.add_argument(
+        "--goal",
+        type=str,
+        default="test_execution",
+        help="Execution goal for APOS",
     )
 
+    args = parser.parse_args()
 
-def run_once(goal: str):
-    store = EventStore()
+    run(args.goal)
 
-    air = generate_air(goal)
 
-    store.append(
-        Event(
-            id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow().isoformat(),
-            type="air_generated",
-            payload=air,
-            source="AIR",
-            status="success",
-        )
-    )
+# =================================================
+# 🧠 ENTRY POINT (SINGLE SOURCE OF TRUTH)
+# =================================================
 
-    actions = []
-    for task in air["tasks"]:
-        actions.extend(task["actions"])
-
-    executed = []
-    pending = []
-
-    for action in actions:
-        decision = evaluate_policy(action)
-
-        if decision == "APPROVE_REQUIRED":
-            approval_id = approval_store.create_request(
-                action=action,
-                context={"goal": goal},
-            )
-
-            store.append(
-                Event(
-                    id=str(uuid.uuid4()),
-                    timestamp=datetime.utcnow().isoformat(),
-                    type="approval_requested",
-                    payload={
-                        "approval_id": approval_id,
-                        "action": action,
-                    },
-                    source="Policy",
-                    status="pending",
-                )
-            )
-
-            pending.append(approval_id)
-            continue
-
-        store.append(
-            Event(
-                id=str(uuid.uuid4()),
-                timestamp=datetime.utcnow().isoformat(),
-                type="policy_evaluated",
-                payload={"action": action, "decision": decision},
-                source="Policy",
-                status="success",
-            )
-        )
-
-        if decision == "ALLOW":
-            event = execute_action(action)
-            store.append(event)
-            executed.append(action["type"])
-
-    summary = {
-        "goal": goal,
-        "executed": executed,
-        "pending_approvals": pending,
-    }
-
-    store.append(
-        Event(
-            id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow().isoformat(),
-            type="execution_summary",
-            payload=summary,
-            source="Kernel",
-            status="success",
-        )
-    )
-
-    return summary
+if __name__ == "__main__":
+    main()
