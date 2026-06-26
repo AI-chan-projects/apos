@@ -7,10 +7,11 @@ from core.approval.approval_store import approval_store
 from core.debug.boot_trace_recorder import BootTraceRecorder
 from datetime import datetime
 import uuid
+import asyncio
 
 
 # -------------------------------------------------
-# 🔥 Live Stream Hook
+# 🔥 Live Stream Hook (OPTIONAL RUNTIME LAYER)
 # -------------------------------------------------
 try:
     from ui.live.event_stream import EventStream
@@ -29,7 +30,6 @@ except:
 try:
     from runtime_monitor.health_monitor import RuntimeHealthMonitor
     health_monitor = RuntimeHealthMonitor()
-
 except:
     health_monitor = None
 
@@ -40,7 +40,6 @@ except:
 try:
     from recovery.recovery_orchestrator import FailureAutoRecoveryEngine
     recovery_engine = FailureAutoRecoveryEngine()
-
 except:
     recovery_engine = None
 
@@ -55,29 +54,27 @@ except:
 
 
 # =================================================
-# 🧠 Execution Predictor (Light Safety Gate)
+# 🧠 EXECUTION PREDICTOR
 # =================================================
 class ExecutionPredictor:
-
-    def __init__(self):
-        self.store = EventStore()
 
     def extract_features(self, nodes):
         nodes = list(nodes.values()) if isinstance(nodes, dict) else nodes
 
         return {
             "node_count": len(nodes),
-            "high_priority_nodes": sum(1 for n in nodes if n.priority > 5),
-            "blocked_risk": sum(1 for n in nodes if n.status == "BLOCKED"),
+            "high_priority_nodes": sum(1 for n in nodes if getattr(n, "priority", 0) > 5),
+            "blocked_risk": sum(1 for n in nodes if getattr(n, "status", None) == "BLOCKED"),
         }
 
     def predict_risk(self, nodes):
         f = self.extract_features(nodes)
 
-        score = 0
-        score += f["blocked_risk"] * 3
-        score += f["high_priority_nodes"] * 1
-        score += f["node_count"] * 0.1
+        score = (
+            f["blocked_risk"] * 3 +
+            f["high_priority_nodes"] * 1 +
+            f["node_count"] * 0.1
+        )
 
         return min(score, 10)
 
@@ -91,36 +88,54 @@ class ExecutionPredictor:
 
 
 # =================================================
-# 🧠 APOS ORCHESTRATOR (KERNEL CORE)
+# 🧠 APOS ORCHESTRATOR CORE
 # =================================================
 class APOSOrchestrator:
 
+    # -------------------------------------------------
+    # BOOT SEQUENCE (ORDERED)
+    # -------------------------------------------------
     def __init__(self):
+
+        # 1. EVENT STORE (source of truth)
         self.store = EventStore()
 
+        # 2. RUNTIME SYSTEMS
         self.health_monitor = health_monitor
         self.recovery_engine = recovery_engine
 
+        # 3. EVOLUTION ENGINE (optional)
         self.feedback_engine = (
             CausalFeedbackEngine(self) if CausalFeedbackEngine else None
         )
 
+        # 4. EXECUTION CORE
         self.predictor = ExecutionPredictor()
-
         self.dag_executor = DAGSExecutor()
         self.evolver = DAGEvolver()
 
-        # 🧠 BOOT TRACE RECORDER (NEW)
+        # 5. BOOT TRACE RECORDER (FINAL AUTHORITY)
         self.boot_recorder = BootTraceRecorder()
 
+        # 6. INTERNAL STATE
+        self._reference_dag = None
+
     # -------------------------------------------------
-    # MAIN LOOP
+    # COMPATIBILITY HOOK (IMPORTANT FOR FEEDBACK ENGINE)
     # -------------------------------------------------
+    def set_reference_dag(self, dag):
+        self._reference_dag = dag
+
+    # =================================================
+    # MAIN EXECUTION LOOP
+    # =================================================
     def run_once(self, air: dict):
 
         self._emit("orchestrator_start", {"air": air})
 
+        # -------------------------------------------------
         # 1. BUILD TASK GRAPH
+        # -------------------------------------------------
         builder = TaskGraphBuilder().build_from_air(air)
         builder.attach_approval_flags(self._policy_engine)
 
@@ -130,14 +145,13 @@ class APOSOrchestrator:
         self._emit("task_graph_built", {"nodes": len(nodes)})
 
         # -------------------------------------------------
-        # 🧠 PREDICTIVE SAFETY GATE
+        # 2. PREDICTIVE SAFETY GATE
         # -------------------------------------------------
         prediction = self.predictor.should_execute(nodes)
         self._emit("execution_prediction", prediction)
 
         if not prediction["safe_to_execute"]:
             self._emit("execution_blocked_by_predictor", prediction)
-
             return {
                 "executed": [],
                 "blocked": [n.name for n in nodes],
@@ -145,15 +159,18 @@ class APOSOrchestrator:
             }
 
         # -------------------------------------------------
-        # 2. CAUSAL DAG SCHEDULING
+        # 3. DAG SCHEDULING
         # -------------------------------------------------
         scheduler = CausalDAGScheduler(nodes)
         ordered_nodes = scheduler.resolve()
 
         self._emit("dag_scheduled", {"count": len(ordered_nodes)})
 
+        # CRITICAL: feed evolution system
+        self.set_reference_dag(ordered_nodes)
+
         # -------------------------------------------------
-        # 3. SINGLE WORKER EXECUTION
+        # 4. EXECUTION
         # -------------------------------------------------
         result = self.dag_executor.execute(ordered_nodes)
 
@@ -166,30 +183,26 @@ class APOSOrchestrator:
         })
 
         # -------------------------------------------------
-        # 4. POST-CYCLE SYSTEMS
+        # 5. POST CYCLE SYSTEMS
         # -------------------------------------------------
         self._post_cycle_recovery()
         self._apply_feedback(nodes, executed, blocked)
         self._apply_evolution(nodes, executed, blocked)
 
         # -------------------------------------------------
-        # 🧠 BOOT TRACE RECORD (FINAL KERNEL STEP)
+        # 6. BOOT TRACE (SINGLE SOURCE OF TRUTH)
         # -------------------------------------------------
-        try:
-            signature = self.boot_recorder.record(
-                air=air,
-                nodes=nodes,
-                ordered_nodes=ordered_nodes,
-                executed=executed,
-                blocked=blocked
-            )
+        signature = self.boot_recorder.record(
+            air=air,
+            nodes=[self._normalize(n) for n in nodes],
+            ordered_nodes=[n.name for n in ordered_nodes],
+            executed=executed,
+            blocked=blocked
+        )
 
-            self._emit("boot_trace_recorded", {
-                "signature": signature
-            })
-
-        except Exception as e:
-            self._emit("boot_trace_failed", {"error": str(e)})
+        self._emit("boot_trace_recorded", {
+            "signature": signature
+        })
 
         return {
             "executed": executed,
@@ -198,20 +211,28 @@ class APOSOrchestrator:
         }
 
     # -------------------------------------------------
-    # 🧠 POST-CYCLE RECOVERY
+    # NORMALIZER (IMPORTANT FIX FOR STRING BUGS)
+    # -------------------------------------------------
+    def _normalize(self, node):
+        return {
+            "id": getattr(node, "id", None),
+            "name": getattr(node, "name", str(node)),
+            "status": getattr(node, "status", None),
+            "priority": getattr(node, "priority", 0),
+        }
+
+    # -------------------------------------------------
+    # RECOVERY
     # -------------------------------------------------
     def _post_cycle_recovery(self):
 
-        if not self.health_monitor or not self.recovery_engine:
+        if not (self.health_monitor and self.recovery_engine):
             return
 
         try:
-            probe_state = self.health_monitor.probe.run_probe()
-            metric_state = self.health_monitor.metrics.snapshot()
-
             health_state = {
-                **probe_state,
-                **metric_state,
+                **self.health_monitor.probe.run_probe(),
+                **self.health_monitor.metrics.snapshot(),
                 "anomalies": []
             }
 
@@ -221,7 +242,7 @@ class APOSOrchestrator:
             self._emit("recovery_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 FEEDBACK LOOP
+    # FEEDBACK LOOP
     # -------------------------------------------------
     def _apply_feedback(self, nodes, executed, blocked):
 
@@ -231,12 +252,11 @@ class APOSOrchestrator:
         try:
             self.feedback_engine.learn(nodes, executed, blocked)
             self.feedback_engine.update_scheduler_bias()
-
         except Exception as e:
             self._emit("feedback_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 DAG EVOLUTION
+    # EVOLUTION LOOP
     # -------------------------------------------------
     def _apply_evolution(self, nodes, executed, blocked):
 
@@ -252,9 +272,10 @@ class APOSOrchestrator:
             self._emit("evolution_failed", {"error": str(e)})
 
     # -------------------------------------------------
-    # 🧠 POLICY ENGINE
+    # POLICY
     # -------------------------------------------------
     def _policy_engine(self, action):
+
         if action["type"] == "log":
             return "ALLOW"
 
@@ -264,7 +285,7 @@ class APOSOrchestrator:
         return "ALLOW"
 
     # -------------------------------------------------
-    # 📡 EVENT EMITTER
+    # EVENT EMITTER (SYNC ONLY FIX)
     # -------------------------------------------------
     def _emit(self, event_type, payload):
 
@@ -282,19 +303,17 @@ class APOSOrchestrator:
         if self.health_monitor:
             self.health_monitor.record_event()
 
-        self._emit_live(event)
-
-    # -------------------------------------------------
-    # 🌐 LIVE STREAM
-    # -------------------------------------------------
-    async def _emit_live(self, event):
-
+        # FIX: async-safe call (NO coroutine leak)
         if global_event_stream:
-            await global_event_stream.push_event({
-                "id": event.id,
-                "timestamp": event.timestamp,
-                "type": event.type,
-                "payload": event.payload,
-                "source": event.source,
-                "status": event.status
-            })
+            try:
+                asyncio.create_task(global_event_stream.push_event({
+                    "id": event.id,
+                    "timestamp": event.timestamp,
+                    "type": event.type,
+                    "payload": event.payload,
+                    "source": event.source,
+                    "status": event.status
+                }))
+            except RuntimeError:
+                # fallback (no event loop)
+                pass
